@@ -1,4 +1,5 @@
 import feedparser
+import datetime from datetime
 
 url = 'http://feeds.arstechnica.com/arstechnica/index'
 
@@ -23,6 +24,14 @@ while count < numentries :
         print(keywords_lower)
     count = count + 1
 
-print(numentries)
+date1 = d.entries[0].published
+date2 = d.entries[19].published
+
+print(date1)
+print(date2)
+if date1 > date2 :
+    print('true')
+
+
 
 
