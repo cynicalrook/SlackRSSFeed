@@ -23,5 +23,6 @@ while count < numentries :
         print(keywords_lower)
     count = count + 1
 
+print(numentries)
 
 
