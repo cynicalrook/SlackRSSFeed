@@ -3,11 +3,8 @@ import boto3
 import json
 
 url = 'http://feeds.arstechnica.com/arstechnica/index'
-last_update = 'Wed, 05 Dec 2018 14:52:24 +0000'
+#last_update = 'Wed, 05 Dec 2018 14:52:24 +0000'
 keywords = {'rocket', 'SpaceX', 'Apple', 'network', 'Trump', 'Physicist', 'physics', 'Marvel', 'iOS', 'Android', 'VMware', 'Docker', 'AI', 'Artificial Intelligence', 'Microsoft'}
-
-#access_key_id = ' '
-#secret_access_key = ' '
 
 def write_to_s3(access_key_id, secret_access_key, date, feedtitle):
     client = boto3.client('s3', aws_access_key_id=access_key_id, aws_secret_access_key=secret_access_key)
@@ -15,17 +12,21 @@ def write_to_s3(access_key_id, secret_access_key, date, feedtitle):
     json_body = json.dumps(body)
     client.put_object(ACL='private', Bucket='slackrssbucket', Key='rssfeed.json', Body=json_body)
 
-write_to_s3(access_key_id, secret_access_key, 'Wed, 15 Dec 2018 16:00:17 +0000', 'Ars Technica')
+#write_to_s3(access_key_id, secret_access_key, 'Wed, 05 Dec 2018 16:00:17 +0000', 'Ars Technica')
 
 
+client = boto3.client('s3', aws_access_key_id=access_key_id, aws_secret_access_key=secret_access_key)
+def get_s3_obj(client, bucket_name, bucket_file, region):
+    body = client.get_object(Bucket=bucket_name, Key=bucket_file)['Body']
+    return json.loads(body.read())
 
-#def get_s3_obj(client, bucket_name, bucket_file, region):
-#    body = client.get_object(Bucket=bucket_name, Key=bucket_file)['Body']
-#    return json.loads(body.read())
+last_update = get_s3_obj(client, 'slackrssbucket', 'rssfeed.json', 'us-east-1')['date']
+print(last_update)
 
 def getfeed(urlstring):
     d = feedparser.parse(url)
     numentries = len(d.entries)
+    last_update = get_s3_obj(client, 'slackrssbucket', 'rssfeed.json', 'us-east-1')['date']
 #    print(numentries)
     count = 0
     while count < numentries :
@@ -53,7 +54,7 @@ def getfeed(urlstring):
 #        print('true')
 
 
-#getfeed(url)
+getfeed(url)
 
 
 
