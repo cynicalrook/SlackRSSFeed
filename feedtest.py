@@ -9,8 +9,8 @@ from pathlib import Path
 from slackclient import SlackClient
 
 url = 'http://feeds.arstechnica.com/arstechnica/index'
-#keywords = {'rocket', 'SpaceX', 'Apple', 'network', 'Trump', 'Physicist', 'physics', 'Marvel', 'iOS', 'Android', 'VMware', 'Docker', 'AI', 'Artificial Intelligence', 'Microsoft'}
-keywords = {'john'}
+keywords = {'rocket', 'SpaceX', 'Apple', 'network', 'Trump', 'Physicist', 'physics', 'Marvel', 'iOS', 'Android', 'VMware', 'Docker', 'AI', 'Artificial Intelligence', 'Microsoft'}
+#keywords = {'Windows'}
 
 #def unshorten_url(long_url):
 #    session = requests.Session()  # so connections are recycled
@@ -64,8 +64,8 @@ def getfeed(client, urlstring, last_update_obj):
 #            write_to_s3(d.entries[0].published, d.feed.title)
             break
         count = count + 1
-#    write_to_s3(client, d.entries[0].published, d.feed.title)
-    write_to_s3(client, 'Wed, 06 Dec 2018 16:00:17 +0000', 'Ars Technica')
+    write_to_s3(client, d.entries[0].published, d.feed.title)
+#    write_to_s3(client, 'Wed, 06 Dec 2018 16:00:17 +0000', 'Ars Technica')
     return newposts_list
 
 def load_config(config_file, config_section):
@@ -118,4 +118,4 @@ def lambda_handler(event, context):
 
 
 #if __name__ == '__main__':
-main()
+#main()
