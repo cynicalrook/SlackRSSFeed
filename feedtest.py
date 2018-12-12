@@ -10,7 +10,7 @@ from pathlib import Path
 from slackclient import SlackClient
 
 url = 'http://feeds.arstechnica.com/arstechnica/index'
-keywords = {'rocket', 'SpaceX', 'Apple', 'network', 'Trump', 'Physicist', 'physics', 'Marvel', 'iOS', 'Android', 'VMware', 'Docker', 'AI', 'Artificial Intelligence', 'Microsoft'}
+keywords = {'rocket', 'SpaceX', 'Apple', 'network', 'Trump', 'Physicist', 'physics', 'Marvel', 'iOS', 'Android', 'VMware', 'Docker', 'AI', 'Artificial Intelligence', 'Microsoft', 'Mac'}
 #keywords = {'Windows'}
 
 #def unshorten_url(long_url):
@@ -58,7 +58,7 @@ def getfeed(client, urlstring, last_update_obj):
 #            linksplit = set(linktext.split())
 #            linksplit_lower = set(map(lambda x: x.lower(), linksplit))
             linktext_lower = linktext.lower()
-            linksplit_lower = re.sub("[^a-zA-Z ]+", "", linktext_lower).split()
+            linksplit_lower = set(re.sub("[^a-zA-Z ]+", "", linktext_lower).split())
             keywords_lower = set(map(lambda x: x.lower(), keywords))
             if (linksplit_lower & keywords_lower) :
                 newposts_list.append(d.entries[count].link)             # create post list
