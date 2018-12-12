@@ -6,7 +6,7 @@ from slackclient import SlackClient
 
 # instantiate Slack client
 #slack_client = SlackClient(os.environ.get('SLACK_BOT_TOKEN'))
-sc = SlackClient('xoxb-496783971686-500468047686-3FszKUTqCQxUNaAIMeEmhrIq')
+sc = SlackClient('')
 # starterbot's user ID in Slack: value is assigned after the bot starts up
 starterbot_id = None
 
@@ -57,12 +57,27 @@ def handle_command(command, channel):
         text=response or default_response
     )
 
+if __name__ == "__main__":
+    if sc.rtm_connect(with_team_state=False):
+        print("Starter Bot connected and running!")
+        # Read bot's user ID by calling Web API method `auth.test`
+        starterbot_id = sc.api_call("auth.test")["user_id"]
+        while True:
+            command, channel = parse_bot_commands(sc.rtm_read())
+            print(sc.rtm_read())
+            if command:
+                handle_command(command, channel)
+            time.sleep(RTM_READ_DELAY)
+    else:
+        print("Connection failed. Exception traceback printed above.")
 
-if sc.rtm_connect():
-    while sc.server.connected is True:
-        print(sc.rtm_read())
-        time.sleep(1)
-else:
-    print("Connection Failed")
+
+
+#if sc.rtm_connect():
+#    while sc.server.connected is True:
+#        print(sc.rtm_read())
+#        time.sleep(1)
+#else:
+#    print("Connection Failed")
 
 
