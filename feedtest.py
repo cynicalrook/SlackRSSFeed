@@ -4,6 +4,7 @@ import os
 import configparser
 import boto3
 import json
+import re
 from datetime import datetime
 from pathlib import Path
 from slackclient import SlackClient
@@ -54,8 +55,10 @@ def getfeed(client, urlstring, last_update_obj):
         published_date = datetime.strptime(d.entries[count].published, '%a, %d %b %Y %H:%M:%S %z')
         if published_date > last_update :    
             linktext = d.entries[count].title
-            linksplit = set(linktext.split())
-            linksplit_lower = set(map(lambda x: x.lower(), linksplit))
+#            linksplit = set(linktext.split())
+#            linksplit_lower = set(map(lambda x: x.lower(), linksplit))
+            linktext_lower = linktext.lower()
+            linksplit_lower = re.sub("[^a-zA-Z ]+", "", linktext_lower).split()
             keywords_lower = set(map(lambda x: x.lower(), keywords))
             if (linksplit_lower & keywords_lower) :
                 newposts_list.append(d.entries[count].link)             # create post list
@@ -118,4 +121,4 @@ def lambda_handler(event, context):
 
 
 #if __name__ == '__main__':
-#main()
+main()
