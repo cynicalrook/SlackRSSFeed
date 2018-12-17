@@ -10,7 +10,7 @@ RTM_READ_DELAY = 1 # 1 second delay between reading from RTM
 EXAMPLE_COMMAND = "do"
 MENTION_REGEX = "^<@(|[WU].+?)>(.*)"
 starterbot_id = None
-command_text = ['one', 'two']
+command_text = ['help', 'list feeds', 'list keywords', 'add keyword', 'add feed', 'remove keyword', 'remove feed', 'two']
 
 def parse_bot_commands(slackbot_id, slack_events):
     """
@@ -44,11 +44,13 @@ def handle_command(slack_client, command, channel):
     # Finds and executes the given command, filling in response
     response = None
     # This is where you start to implement more commands!
-    for command in command_text:
+    if command in command_text:
         if command in ('one'):
             response = 'One received'
         elif command in ('two'):
             response = 'Two received'
+    else:
+        response = 'Commands:\nlist feeds\nlist keywords\nadd feed <RSS feed URL>\nadd keyword <keyword>\nremove feed <feed name from *list feeds* command>\nremove keyword <keyword>'
     
 
 
@@ -125,3 +127,5 @@ def main():
 #if __name__ == "__main__":
 #    main()
 main()
+
+print('Commands:\nlist feeds\nlist keywords\nadd feed <RSS feed URL>\nadd keyword <keyword>\nremove feed <feed name from \033[1mlist feeds\033[0m command>\nremove keyword <keyword>')
