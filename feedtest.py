@@ -4,13 +4,13 @@ import os
 import configparser
 import boto3
 import json
+import re
 from datetime import datetime
 from pathlib import Path
 from slackclient import SlackClient
 
 url = 'http://feeds.arstechnica.com/arstechnica/index'
-keywords = {'rocket', 'SpaceX', 'Apple', 'network', 'Trump', 'Physicist', 'physics', 'Marvel', 'iOS', 'Android', 'VMware', 'Docker', 'AI', 'Artificial Intelligence', 'Microsoft'}
-#keywords = {'Windows'}
+keywords = {'rocket', 'SpaceX', 'Apple', 'network', 'Trump', 'Physicist', 'physics', 'Marvel', 'iOS', 'Android', 'VMware', 'Docker', 'AI', 'Artificial Intelligence', 'Microsoft', 'Mac', 'galaxy'}
 
 #def unshorten_url(long_url):
 #    session = requests.Session()  # so connections are recycled
@@ -24,8 +24,6 @@ def write_to_s3(client, date, feedtitle):
     body = {'date': date, "feedtitle": feedtitle}
     json_body = json.dumps(body)
     client.put_object(ACL='private', Bucket='slackrssbucket', Key='rssfeed.json', Body=json_body)
-
-#write_to_s3('Wed, 06 Dec 2018 16:00:17 +0000', 'Ars Technica')
 
 def get_s3_obj(client, bucket_name, bucket_file, region):
     body = client.get_object(Bucket=bucket_name, Key=bucket_file)['Body']
@@ -54,18 +52,17 @@ def getfeed(client, urlstring, last_update_obj):
         published_date = datetime.strptime(d.entries[count].published, '%a, %d %b %Y %H:%M:%S %z')
         if published_date > last_update :    
             linktext = d.entries[count].title
-            linksplit = set(linktext.split())
-            linksplit_lower = set(map(lambda x: x.lower(), linksplit))
+#            linksplit = set(linktext.split())
+#            linksplit_lower = set(map(lambda x: x.lower(), linksplit))
+            linktext_lower = linktext.lower()
+            linksplit_lower = set(re.sub("[^a-zA-Z ]+", "", linktext_lower).split())
             keywords_lower = set(map(lambda x: x.lower(), keywords))
             if (linksplit_lower & keywords_lower) :
                 newposts_list.append(d.entries[count].link)             # create post list
         else:
-            # insert code here to write d.feed.title and d.entries[0].published and to AWS
-#            write_to_s3(d.entries[0].published, d.feed.title)
             break
         count = count + 1
-    write_to_s3(client, d.entries[0].published, d.feed.title)
-#    write_to_s3(client, 'Wed, 06 Dec 2018 16:00:17 +0000', 'Ars Technica')
+    write_to_s3(client, d.entries[0].published, d.feed.title)           #    write_to_s3(client, 'Wed, 06 Dec 2018 16:00:17 +0000', 'Ars Technica')
     return newposts_list
 
 def load_config(config_file, config_section):
@@ -80,9 +77,6 @@ def load_config(config_file, config_section):
         bucket_name = config.get(config_section, 'bucket_name')
         bucket_file = config.get(config_section, 'bucket_file')
         slack_token = config.get(config_section, 'token')
-#        slack_channels = config.get(config_section, 'channels')
-#        slack_blurb = config.get(config_section, 'blurb')
-#        url = config.get(config_section, 'url')
     else:
         access_key_id = os.environ['access_key_id']
         secret_access_key = os.environ['secret_access_key']
@@ -90,9 +84,6 @@ def load_config(config_file, config_section):
         bucket_name = os.environ['bucket_name']
         bucket_file = os.environ['bucket_file']
         slack_token = os.environ['token']
- #       slack_channels = os.environ['channels']
- #       slack_blurb = os.environ['blurb']
- #       url = os.environ['url']
     return [access_key_id, secret_access_key, region, bucket_name, bucket_file, slack_token]
 
 def main():
@@ -118,4 +109,4 @@ def lambda_handler(event, context):
 
 
 #if __name__ == '__main__':
-#main()
+main()
