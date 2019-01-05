@@ -128,4 +128,4 @@ def main():
 #    main()
 main()
 
-print('Commands:\nlist feeds\nlist keywords\nadd feed <RSS feed URL>\nadd keyword <keyword>\nremove feed <feed name from \033[1mlist feeds\033[0m command>\nremove keyword <keyword>')
+#print('Commands:\nlist feeds\nlist keywords\nadd feed <RSS feed URL>\nadd keyword <keyword>\nremove feed <feed name from \033[1mlist feeds\033[0m command>\nremove keyword <keyword>')
