@@ -1,4 +1,7 @@
+import sys
+sys.path.append('/Users/steve/Documents/python-virtual-environments/slackrssfeed/Lib/site-packages')
 import os
+import json
 import time
 import re
 import configparser
@@ -12,6 +15,12 @@ MENTION_REGEX = "^<@(|[WU].+?)>(.*)"
 starterbot_id = None
 command_text = ['help', 'list feeds', 'list keywords', 'add keyword', 'add feed', 'remove keyword', 'remove feed', 'two']
 
+def get_keywords():
+    with open('keywords.json') as keyword_file:
+        data1 = json.load(keyword_file)
+    s = set(data1)
+    return s
+    
 def parse_bot_commands(slackbot_id, slack_events):
     """
         Parses a list of events coming from the Slack RTM API to find bot commands.
@@ -44,14 +53,36 @@ def handle_command(slack_client, command, channel):
     # Finds and executes the given command, filling in response
     response = None
     # This is where you start to implement more commands!
-    if command in command_text:
-        if command in ('one'):
-            response = 'One received'
-        elif command in ('two'):
-            response = 'Two received'
+    keywords = []
+    s = command.split()
+    split_command = s[0] + ' ' + s[1]
+
+
+    if split_command in command_text:
+        if split_command in ('list keywords'):
+            keywords = list(get_keywords())
+            response = keywords
+           # response = 'One received'
+        elif split_command in ('add keyword'):
+            keywords = list(get_keywords())
+            if s[2] in keywords:
+                response = s[2] + ' is already in the keyword list!'
+            else:
+                keywords.append(s[2])
+                with open('keywords.json', 'w') as outfile:
+                    json.dump(keywords, outfile, sort_keys=True, indent=4)
+                response = 'added keyword ' + s[2]
+        elif split_command in ('remove keyword'):
+            keywords = list(get_keywords()) 
+            if s[2] not in keywords:
+                response = s[2] + ' is not in the keyword list!'
+            else:
+                keywords.remove(s[2])
+                with open('keywords.json', 'w') as outfile:
+                    json.dump(keywords, outfile, sort_keys=True, indent=4)
+                response = 'removed keyword ' + s[2]                        
     else:
         response = 'Commands:\nlist feeds\nlist keywords\nadd feed <RSS feed URL>\nadd keyword <keyword>\nremove feed <feed name from *list feeds* command>\nremove keyword <keyword>'
-    
 
 
 

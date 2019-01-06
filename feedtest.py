@@ -1,3 +1,5 @@
+import sys
+sys.path.append('/Users/steve/Documents/python-virtual-environments/slackrssfeed/Lib/site-packages')
 import feedparser
 import requests
 import os
@@ -10,12 +12,12 @@ from pathlib import Path
 from slackclient import SlackClient
 
 url = 'http://feeds.arstechnica.com/arstechnica/index'
-keywords = {'rocket', 'SpaceX', 'Apple', 'network', 'Trump', 'Physicist', 'physics', 'Marvel', 'iOS', 'Android', 'VMware', 'Docker', 'AI', 'Artificial Intelligence', 'Microsoft', 'Mac', 'galaxy'}
 
-#def unshorten_url(long_url):
-#    session = requests.Session()  # so connections are recycled
-#    resp = session.head(long_url, allow_redirects=True)
-#    return resp.url
+def get_keywords():
+    with open('keywords.json') as keyword_file:
+        data1 = json.load(keyword_file)
+    s = set(data1)
+    return s
 
 def get_s3_client(access_key_id, secret_access_key):
     return boto3.client('s3', aws_access_key_id=access_key_id, aws_secret_access_key=secret_access_key)
@@ -47,6 +49,7 @@ def getfeed(client, urlstring, last_update_obj):
     d = feedparser.parse(url)
     numentries = len(d.entries)
     last_update = datetime.strptime(last_update_obj, '%a, %d %b %Y %H:%M:%S %z')
+    keywords = get_keywords()
     count = 0
     while count < numentries :
         published_date = datetime.strptime(d.entries[count].published, '%a, %d %b %Y %H:%M:%S %z')
@@ -62,7 +65,7 @@ def getfeed(client, urlstring, last_update_obj):
         else:
             break
         count = count + 1
-    write_to_s3(client, d.entries[0].published, d.feed.title)           #    write_to_s3(client, 'Wed, 06 Dec 2018 16:00:17 +0000', 'Ars Technica')
+#    write_to_s3(client, d.entries[0].published, d.feed.title)           #    write_to_s3(client, 'Wed, 06 Dec 2018 16:00:17 +0000', 'Ars Technica')
     return newposts_list
 
 def load_config(config_file, config_section):
