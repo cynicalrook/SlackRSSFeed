@@ -6,6 +6,7 @@ import time
 import re
 import configparser
 from slackclient import SlackClient
+from tinydb import TinyDB, Query
 
 
 # constants
@@ -13,7 +14,8 @@ RTM_READ_DELAY = 1 # 1 second delay between reading from RTM
 EXAMPLE_COMMAND = "do"
 MENTION_REGEX = "^<@(|[WU].+?)>(.*)"
 starterbot_id = None
-command_text = ['help', 'list feeds', 'list keywords', 'add keyword', 'add feed', 'remove keyword', 'remove feed', 'two']
+command_text = ['list feeds', 'list keywords', 'add keyword', 'add feed', 'remove keyword', 'remove feed']
+feed_db = TinyDB('rsslist.json')
 
 def get_keywords():
     with open('keywords.json') as keyword_file:
@@ -51,12 +53,18 @@ def handle_command(slack_client, command, channel):
     default_response = "Not sure what you mean. Try *{}*.".format(EXAMPLE_COMMAND)
 
     # Finds and executes the given command, filling in response
-    response = None
+    response = ''
     # This is where you start to implement more commands!
     keywords = []
+    split_payload = ''
     s = command.split()
+    s_len = len(s)
     split_command = s[0] + ' ' + s[1]
-
+    count = 2
+    while count < s_len:
+        split_payload = split_payload + s[count] + ' '
+        count = count + 1
+    split_payload = split_payload.strip()
 
     if split_command in command_text:
         if split_command in ('list keywords'):
@@ -80,7 +88,31 @@ def handle_command(slack_client, command, channel):
                 keywords.remove(s[2])
                 with open('keywords.json', 'w') as outfile:
                     json.dump(keywords, outfile, sort_keys=True, indent=4)
-                response = 'removed keyword ' + s[2]                        
+                response = 'removed keyword ' + s[2]
+        elif split_command in ('list feeds'):
+            numentries = len(feed_db)
+            count = 0
+            feeds_title = [r['feedtitle'] for r in feed_db]
+            feeds_url = [r['url'] for r in feed_db]
+            while count < numentries:
+                response = response + (feeds_title[count] + '    ' + feeds_url[count] + '\n')
+                count = count + 1
+        elif split_command in ('remove feed'):
+            feeds_title = s[2]
+            search_feed = Query()
+            search_result = feed_db.search(search_feed.feedtitle == feeds_title)
+            if search_result != []:
+                feed_db.remove(search_feed.feedtitle.search(feeds_title))
+                response = feeds_title + ' removed!'
+            else:
+                response = feeds_title + ' is not in the feeds list!'
+        elif split_command in ('add feed'):
+            feeds_title = split_payload
+            search_feed = Query()
+            search_result = feed_db.search(search_feed.feedtitle == feeds_title)
+            if search_result != []:
+                response = split_payload + ' is already in the feed list!'
+            
     else:
         response = 'Commands:\nlist feeds\nlist keywords\nadd feed <RSS feed URL>\nadd keyword <keyword>\nremove feed <feed name from *list feeds* command>\nremove keyword <keyword>'
 
@@ -136,6 +168,7 @@ def main():
      bucket_name,
      bucket_file,
      slack_token) = load_config(config_file, config_section)
+
 
     slack_client = SlackClient(slack_token)
     if slack_client.rtm_connect(with_team_state=False, auto_reconnect=True):
