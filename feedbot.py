@@ -1,5 +1,5 @@
 import sys
-sys.path.append('/Users/steve/Documents/python-virtual-environments/slackrssfeed/Lib/site-packages')
+#sys.path.append('/Users/steve/Documents/python-virtual-environments/slackrssfeed/Lib/site-packages')
 import os
 import json
 import time
@@ -13,10 +13,10 @@ from urllib.parse import urlparse
 
 # constants
 RTM_READ_DELAY = 1 # 1 second delay between reading from RTM
-EXAMPLE_COMMAND = "do"
+EXAMPLE_COMMAND = "help"
 MENTION_REGEX = "^<@(|[WU].+?)>(.*)"
 starterbot_id = None
-command_text = ['list feeds', 'list keywords', 'add keyword', 'add feed', 'remove keyword', 'remove feed']
+command_text = ['help', 'list feeds', 'list keywords', 'add keyword', 'add feed', 'remove keyword', 'remove feed']
 feed_db = TinyDB('rsslist.json')
 
 def get_keywords():
@@ -61,10 +61,13 @@ def handle_command(slack_client, command, channel):
     split_payload = ''
     s = command.split()
     s_len = len(s)
-    split_command = s[0] + ' ' + s[1]
+    if s_len <= 1:
+        split_command = 'help'
+    else:
+        split_command = (s[0].lower() + ' ' + s[1].lower())
     count = 2
     while count < s_len:
-        split_payload = split_payload + s[count] + ' '
+        split_payload = split_payload + s[count].lower() + ' '
         count = count + 1
     split_payload = split_payload.strip()
 
@@ -100,7 +103,7 @@ def handle_command(slack_client, command, channel):
                 response = response + (feeds_title[count] + '    ' + feeds_url[count] + '\n')
                 count = count + 1
         elif split_command in ('remove feed'):
-            feeds_title = s[2]
+            feeds_title = split_payload
             search_feed = Query()
             search_result = feed_db.search(search_feed.feedtitle == feeds_title)
             if search_result != []:
@@ -109,24 +112,30 @@ def handle_command(slack_client, command, channel):
             else:
                 response = feeds_title + ' is not in the feeds list!'
         elif split_command in ('add feed'):
-            feed_rss = split_payload
-            feed = feedparser.parse('http://feeds.arstechnica.com/arstechnica/index')
+            feed_rss = split_payload.strip('<>')
+            feed = feedparser.parse(feed_rss)
             try:
                 feed_entries = feed.entries[1]   # Test for valid RSS feed
                 search_feed = Query()
                 search_result = feed_db.search(search_feed.url == feed_rss)
                 if search_result != []:
-                    response = split_payload + ' is already in the feed list!'
+                    response = feed.feed.title + ' (' + feed_rss + ') is already in the feed list!'
+                else:
+                    feed_insert = {"feedtitle": feed.feed.title, "url": feed_rss}
+                    feed_db.insert(feed_insert)
+                    response = feed.feed.title + 'successfully added!'
             except IndexError:
-                print('No feed')
+                response = "I'm sorry, I don't recognize that as a valid RSS feed.  Please check the site."
+        elif split_command in ('help'):
+            default_response = 'Commands:\nlist feeds\nlist keywords\nadd feed <RSS feed URL>\nadd keyword <keyword>\nremove feed <feed name from *list feeds* command>\nremove keyword <keyword>'
     else:
         response = 'Commands:\nlist feeds\nlist keywords\nadd feed <RSS feed URL>\nadd keyword <keyword>\nremove feed <feed name from *list feeds* command>\nremove keyword <keyword>'
 
 
 
 
-    if command.startswith(EXAMPLE_COMMAND):
-        response = "Sure...write some more code then I can do that!"
+#    if command.startswith(EXAMPLE_COMMAND):
+#        response = "Sure...write some more code then I can do that!"
 
     # Sends the response back to the channel
     slack_client.api_call(
