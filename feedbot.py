@@ -5,8 +5,10 @@ import json
 import time
 import re
 import configparser
+import feedparser
 from slackclient import SlackClient
 from tinydb import TinyDB, Query
+from urllib.parse import urlparse
 
 
 # constants
@@ -107,12 +109,16 @@ def handle_command(slack_client, command, channel):
             else:
                 response = feeds_title + ' is not in the feeds list!'
         elif split_command in ('add feed'):
-            feeds_title = split_payload
-            search_feed = Query()
-            search_result = feed_db.search(search_feed.feedtitle == feeds_title)
-            if search_result != []:
-                response = split_payload + ' is already in the feed list!'
-            
+            feed_rss = split_payload
+            feed = feedparser.parse('http://feeds.arstechnica.com/arstechnica/index')
+            try:
+                feed_entries = feed.entries[1]   # Test for valid RSS feed
+                search_feed = Query()
+                search_result = feed_db.search(search_feed.url == feed_rss)
+                if search_result != []:
+                    response = split_payload + ' is already in the feed list!'
+            except IndexError:
+                print('No feed')
     else:
         response = 'Commands:\nlist feeds\nlist keywords\nadd feed <RSS feed URL>\nadd keyword <keyword>\nremove feed <feed name from *list feeds* command>\nremove keyword <keyword>'
 
