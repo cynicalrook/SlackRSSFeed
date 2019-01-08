@@ -78,22 +78,22 @@ def handle_command(slack_client, command, channel):
            # response = 'One received'
         elif split_command in ('add keyword'):
             keywords = list(get_keywords())
-            if s[2] in keywords:
+            if s[2].lower() in keywords:
                 response = s[2] + ' is already in the keyword list!'
             else:
-                keywords.append(s[2])
+                keywords.append(s[2].lower())
                 with open('keywords.json', 'w') as outfile:
                     json.dump(keywords, outfile, sort_keys=True, indent=4)
-                response = 'added keyword ' + s[2]
+                response = 'added keyword ' + s[2].lower()
         elif split_command in ('remove keyword'):
             keywords = list(get_keywords()) 
-            if s[2] not in keywords:
+            if s[2].lower() not in keywords:
                 response = s[2] + ' is not in the keyword list!'
             else:
-                keywords.remove(s[2])
+                keywords.remove(s[2].lower())
                 with open('keywords.json', 'w') as outfile:
                     json.dump(keywords, outfile, sort_keys=True, indent=4)
-                response = 'removed keyword ' + s[2]
+                response = 'removed keyword ' + s[2].lower()
         elif split_command in ('list feeds'):
             numentries = len(feed_db)
             count = 0
