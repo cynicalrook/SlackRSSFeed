@@ -67,9 +67,10 @@ def handle_command(slack_client, command, channel):
         split_command = (s[0].lower() + ' ' + s[1].lower())
     count = 2
     while count < s_len:
-        split_payload = split_payload + s[count].lower() + ' '
+        split_payload = split_payload + s[count] + ' '
         count = count + 1
     split_payload = split_payload.strip()
+    split_payload_lower = split_payload.lower()
 
     if split_command in command_text:
         if split_command in ('list keywords'):
@@ -105,14 +106,14 @@ def handle_command(slack_client, command, channel):
         elif split_command in ('remove feed'):
             feeds_title = split_payload
             search_feed = Query()
-            search_result = feed_db.search(search_feed.feedtitle == feeds_title)
+            search_result = feed_db.search(search_feed.feedtitle.matches(feeds_title, flags=re.IGNORECASE))
             if search_result != []:
-                feed_db.remove(search_feed.feedtitle.search(feeds_title))
+                feed_db.remove(search_feed.feedtitle.matches(feeds_title, flags=re.IGNORECASE))
                 response = feeds_title + ' removed!'
             else:
                 response = feeds_title + ' is not in the feeds list!'
         elif split_command in ('add feed'):
-            feed_rss = split_payload.strip('<>')
+            feed_rss = split_payload_lower.strip('<>')
             feed = feedparser.parse(feed_rss)
             try:
                 feed_entries = feed.entries[1]   # Test for valid RSS feed
@@ -187,7 +188,7 @@ def main():
 
     slack_client = SlackClient(slack_token)
     if slack_client.rtm_connect(with_team_state=False, auto_reconnect=True):
-        print("Starter Bot connected and running!")
+        print("Feedbot connected and running!")
         # Read bot's user ID by calling Web API method `auth.test`
         slackbot_id = slack_client.api_call("auth.test")["user_id"]
         while True:
