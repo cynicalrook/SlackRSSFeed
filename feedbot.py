@@ -123,7 +123,7 @@ def handle_command(slack_client, command, channel):
                 else:
                     feed_insert = {"feedtitle": feed.feed.title, "url": feed_rss}
                     feed_db.insert(feed_insert)
-                    response = feed.feed.title + 'successfully added!'
+                    response = feed.feed.title + ' successfully added!'
             except IndexError:
                 response = "I'm sorry, I don't recognize that as a valid RSS feed.  Please check the site."
         elif split_command in ('help'):
