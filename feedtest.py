@@ -10,6 +10,7 @@ import re
 from datetime import datetime
 from pathlib import Path
 from slackclient import SlackClient
+from tinydb import TinyDB, Query
 
 url = 'http://feeds.arstechnica.com/arstechnica/index'
 
