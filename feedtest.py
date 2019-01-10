@@ -8,17 +8,25 @@ import boto3
 import json
 import re
 from datetime import datetime
+from datetime import timezone
 from pathlib import Path
 from slackclient import SlackClient
 from tinydb import TinyDB, Query
 
-url = 'http://feeds.arstechnica.com/arstechnica/index'
+#url = 'http://feeds.arstechnica.com/arstechnica/index'
+
+feed_db = TinyDB('rsslist.json')
 
 def get_keywords():
     with open('keywords.json') as keyword_file:
         data1 = json.load(keyword_file)
     s = set(data1)
     return s
+
+def get_lastupdate():
+    with open('lastupdate.json') as lastupdate_file:
+        data1 = json.load(lastupdate_file)['date']
+    return data1
 
 def get_s3_client(access_key_id, secret_access_key):
     return boto3.client('s3', aws_access_key_id=access_key_id, aws_secret_access_key=secret_access_key)
@@ -47,13 +55,17 @@ def post_to_slack(slack_client, newposts):
 
 def getfeed(client, urlstring, last_update_obj):
     newposts_list = []
-    d = feedparser.parse(url)
+    d = feedparser.parse(urlstring)
     numentries = len(d.entries)
     last_update = datetime.strptime(last_update_obj, '%a, %d %b %Y %H:%M:%S %z')
     keywords = get_keywords()
     count = 0
     while count < numentries :
-        published_date = datetime.strptime(d.entries[count].published, '%a, %d %b %Y %H:%M:%S %z')
+        try:
+            published_date = datetime.strptime(d.entries[count].published, '%a, %d %b %Y %H:%M:%S %z')
+        except ValueError:
+            published_date = datetime.strptime(d.entries[count].published, '%a, %d %b %Y %H:%M:%S %Z')
+            published_date = published_date.replace(tzinfo = timezone.utc)
         if published_date > last_update :    
             linktext = d.entries[count].title
 #            linksplit = set(linktext.split())
@@ -103,10 +115,18 @@ def main():
 
     client = get_s3_client(access_key_id, secret_access_key)
     slack_client = SlackClient(slack_token)
-    last_update_obj = get_s3_obj(client, bucket_name, bucket_file, region)['date']
-    post_list = getfeed(client, url, last_update_obj)
-    print(post_list)
-    post_to_slack(slack_client, post_list)
+#    last_update_obj = get_s3_obj(client, bucket_name, bucket_file, region)['date']
+    last_update_obj = get_lastupdate()
+    feed_count = len(feed_db)
+    feed_counter = feed_count
+#    while feed_counter = feed_count:
+    while feed_counter > 0:
+        url = feed_db.get(doc_id = feed_counter)['url']
+#        url = feed_db.get(doc_id = 1)['url']
+        post_list = getfeed(client, url, last_update_obj)
+        feed_counter = feed_counter - 1
+        print(post_list)
+        post_to_slack(slack_client, post_list)
 
 def lambda_handler(event, context):
     main()

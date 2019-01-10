@@ -14,13 +14,13 @@ item3 = {"feedtitle": "MIT", "url": "https://goes.here"}
 
 
 
-title = 'TechSpot'
-feed = Query()
+#title = 'TechSpot'
+#feed = Query()
 
 
 
-results = db.search(feed.feedtitle == title)
-print(results[0])
+#results = db.search(feed.feedtitle == title)
+#print(results[0])
 
 #if results != []:
 #if db.search(feed.feedtitle == title) != []:
@@ -31,9 +31,19 @@ print(results[0])
 
 #print(b)
 
-c = db.search(feed.feedtitle == 'TechSpot')
+#c = db.search(feed.feedtitle == 'TechSpot')
 #print(c)
 
-print(len(db))
-print(db.all())
+
+#feedlist = Query()
+#f = db.search(feedlist.url != [])[0]
+#urlnew = db.get(doc_id = 1)['url']
+
+#print(f)
+#print(urlnew)
+
+
+#print(len(db))
+#print(db.all())
+
 
