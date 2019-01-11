@@ -16,6 +16,7 @@ from tinydb import TinyDB, Query
 #url = 'http://feeds.arstechnica.com/arstechnica/index'
 
 feed_db = TinyDB('rsslist.json')
+slack_channel = "CEKB88A1Y"
 
 def get_keywords():
     with open('keywords.json') as keyword_file:
@@ -28,6 +29,14 @@ def get_lastupdate():
         data1 = json.load(lastupdate_file)['date']
     return data1
 
+def post_lastUpdate(lastupdate):
+    with open('lastupdate.json', 'w') as outfile_file:
+        date_formatted = {'date': datetime.strftime(lastupdate, '%a, %d %b %Y %H:%m:%S %z')}
+        outfile_file.write(json.dumps(date_formatted))
+#    with open('lastupdate.json', 'w') as outfile_file:
+#        date_formatted = {'date': datetime.strftime(lastupdate, '%a, %d %b %Y %H:%m:%S %z')}
+#        json.dump(outfile_file, date_formatted)
+        
 def get_s3_client(access_key_id, secret_access_key):
     return boto3.client('s3', aws_access_key_id=access_key_id, aws_secret_access_key=secret_access_key)
 
@@ -45,7 +54,7 @@ def post_to_slack(slack_client, newposts):
     newposts.reverse()
     listsize = len(newposts)
     while i < listsize:        
-        slack_client.api_call("chat.postMessage", channel="CEKB88A1Y", text=newposts[i], as_user = True)
+        slack_client.api_call("chat.postMessage", slack_channel, text=newposts[i], as_user = True)
         i = i + 1
 
 #def get_last_update(client, bucket_name, bucket_file, region):
@@ -79,7 +88,7 @@ def getfeed(client, urlstring, last_update_obj):
             break
         count = count + 1
 #    write_to_s3(client, d.entries[0].published, d.feed.title)           #    write_to_s3(client, 'Wed, 06 Dec 2018 16:00:17 +0000', 'Ars Technica')
-    return newposts_list
+    return newposts_list, published_date
 
 def load_config(config_file, config_section):
 #    dir_path = os.path.dirname(os.path.relpath('config.ini'))
@@ -123,10 +132,11 @@ def main():
     while feed_counter > 0:
         url = feed_db.get(doc_id = feed_counter)['url']
 #        url = feed_db.get(doc_id = 1)['url']
-        post_list = getfeed(client, url, last_update_obj)
+        post_list, published_date = getfeed(client, url, last_update_obj)
         feed_counter = feed_counter - 1
         print(post_list)
-        post_to_slack(slack_client, post_list)
+        post_lastUpdate(published_date)
+#        post_to_slack(slack_client, post_list)
 
 def lambda_handler(event, context):
     main()
