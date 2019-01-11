@@ -1,4 +1,4 @@
-import sys
+#import sys
 #sys.path.append('/Users/steve/Documents/python-virtual-environments/slackrssfeed/Lib/site-packages')
 import os
 import json
@@ -6,6 +6,7 @@ import time
 import re
 import configparser
 import feedparser
+from datetime import datetime
 from slackclient import SlackClient
 from tinydb import TinyDB, Query
 from urllib.parse import urlparse
@@ -121,8 +122,8 @@ def handle_command(slack_client, command, channel):
                 search_result = feed_db.search(search_feed.url == feed_rss)
                 if search_result != []:
                     response = feed.feed.title + ' (' + feed_rss + ') is already in the feed list!'
-                else:
-                    feed_insert = {"feedtitle": feed.feed.title, "url": feed_rss}
+                else:   
+                    feed_insert = {"feedtitle": feed.feed.title, "url": feed_rss, "lastupdate": datetime.utcnow().strftime('%a, %d %b %Y %H:%M:%S +0000')}
                     feed_db.insert(feed_insert)
                     response = feed.feed.title + ' successfully added!'
             except IndexError:
@@ -132,11 +133,6 @@ def handle_command(slack_client, command, channel):
     else:
         response = 'Commands:\nlist feeds\nlist keywords\nadd feed <RSS feed URL>\nadd keyword <keyword>\nremove feed <feed name from *list feeds* command>\nremove keyword <keyword>'
 
-
-
-
-#    if command.startswith(EXAMPLE_COMMAND):
-#        response = "Sure...write some more code then I can do that!"
 
     # Sends the response back to the channel
     slack_client.api_call(
@@ -153,37 +149,17 @@ def load_config(config_file, config_section):
     if os.path.isfile(dir_path + '\\' + config_file):
         config = configparser.ConfigParser()
         config.read(config_file)
-        access_key_id = config.get(config_section, 'access_key_id')
-        secret_access_key = config.get(config_section, 'secret_access_key')
-        region = config.get(config_section, 'region')
-        bucket_name = config.get(config_section, 'bucket_name')
-        bucket_file = config.get(config_section, 'bucket_file')
         slack_token = config.get(config_section, 'token')
-#        slack_channels = config.get(config_section, 'channels')
-#        slack_blurb = config.get(config_section, 'blurb')
-#        url = config.get(config_section, 'url')
+
     else:
-        access_key_id = os.environ['access_key_id']
-        secret_access_key = os.environ['secret_access_key']
-        region = os.environ['region']
-        bucket_name = os.environ['bucket_name']
-        bucket_file = os.environ['bucket_file']
         slack_token = os.environ['token']
- #       slack_channels = os.environ['channels']
- #       slack_blurb = os.environ['blurb']
- #       url = os.environ['url']
-    return [access_key_id, secret_access_key, region, bucket_name, bucket_file, slack_token]
+    return [slack_token]
 
 def main():
     config_file = 'config.ini'
     config_section = 'dev'
 
-    (access_key_id,
-     secret_access_key,
-     region,
-     bucket_name,
-     bucket_file,
-     slack_token) = load_config(config_file, config_section)
+    slack_token = load_config(config_file, config_section)
 
 
     slack_client = SlackClient(slack_token)
@@ -204,8 +180,8 @@ def main():
 
 
 
-#if __name__ == "__main__":
-#    main()
+if __name__ == "__main__":
+    main()
 main()
 
 #print('Commands:\nlist feeds\nlist keywords\nadd feed <RSS feed URL>\nadd keyword <keyword>\nremove feed <feed name from \033[1mlist feeds\033[0m command>\nremove keyword <keyword>')

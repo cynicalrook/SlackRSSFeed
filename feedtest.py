@@ -29,10 +29,19 @@ def get_lastupdate():
         data1 = json.load(lastupdate_file)['date']
     return data1
 
-def post_lastUpdate(lastupdate):
-    with open('lastupdate.json', 'w') as outfile_file:
-        date_formatted = {'date': datetime.strftime(lastupdate, '%a, %d %b %Y %H:%m:%S %z')}
-        outfile_file.write(json.dumps(date_formatted))
+def post_lastUpdate(url, lastupdate):
+    try:
+        date_formatted = datetime.strftime(lastupdate, '%a, %d %b %Y %H:%M:%S %z')
+    except TypeError:
+        date_formatted = lastupdate[:-3] + '+0000'
+    feed_search = Query()
+    feed_db.update({'lastupdate': date_formatted}, feed_search.url == url)
+
+
+#    with open('lastupdate.json', 'w') as outfile_file:
+#        date_formatted = {'date': datetime.strftime(lastupdate, '%a, %d %b %Y %H:%m:%S %z')}
+#        outfile_file.write(json.dumps(date_formatted))
+
 #    with open('lastupdate.json', 'w') as outfile_file:
 #        date_formatted = {'date': datetime.strftime(lastupdate, '%a, %d %b %Y %H:%m:%S %z')}
 #        json.dump(outfile_file, date_formatted)
@@ -64,6 +73,7 @@ def post_to_slack(slack_client, newposts):
 
 def getfeed(client, urlstring, last_update_obj):
     newposts_list = []
+    newposts_list_date = []
     d = feedparser.parse(urlstring)
     numentries = len(d.entries)
     last_update = datetime.strptime(last_update_obj, '%a, %d %b %Y %H:%M:%S %z')
@@ -84,11 +94,15 @@ def getfeed(client, urlstring, last_update_obj):
             keywords_lower = set(map(lambda x: x.lower(), keywords))
             if (linksplit_lower & keywords_lower) :
                 newposts_list.append(d.entries[count].link)             # create post list
+                newposts_list_date.append(published_date)
         else:
             break
         count = count + 1
 #    write_to_s3(client, d.entries[0].published, d.feed.title)           #    write_to_s3(client, 'Wed, 06 Dec 2018 16:00:17 +0000', 'Ars Technica')
-    return newposts_list, published_date
+    try:
+        return newposts_list, newposts_list_date[0]
+    except IndexError:
+        return newposts_list, d.entries[0].published
 
 def load_config(config_file, config_section):
 #    dir_path = os.path.dirname(os.path.relpath('config.ini'))
@@ -125,17 +139,18 @@ def main():
     client = get_s3_client(access_key_id, secret_access_key)
     slack_client = SlackClient(slack_token)
 #    last_update_obj = get_s3_obj(client, bucket_name, bucket_file, region)['date']
-    last_update_obj = get_lastupdate()
+#    last_update_obj = get_lastupdate()
     feed_count = len(feed_db)
     feed_counter = feed_count
 #    while feed_counter = feed_count:
     while feed_counter > 0:
         url = feed_db.get(doc_id = feed_counter)['url']
+        last_update_obj = feed_db.get(doc_id = feed_counter)['lastupdate']
 #        url = feed_db.get(doc_id = 1)['url']
         post_list, published_date = getfeed(client, url, last_update_obj)
         feed_counter = feed_counter - 1
         print(post_list)
-        post_lastUpdate(published_date)
+        post_lastUpdate(url, published_date)
 #        post_to_slack(slack_client, post_list)
 
 def lambda_handler(event, context):
