@@ -141,16 +141,14 @@ def handle_command(slack_client, command, channel):
         text=response or default_response
     )
 
-
-
 def load_config(config_file, config_section):
 #    dir_path = os.path.dirname(os.path.relpath('config.ini'))
-    dir_path = os.path.abspath('.')
-    if os.path.isfile(dir_path + '\\' + config_file):
+    dir_path = os.path.dirname(os.path.realpath(__file__))
+#    dir_path = os.path.abspath('.')
+    if os.path.isfile(dir_path + '/' + config_file):
         config = configparser.ConfigParser()
         config.read(config_file)
         slack_token = config.get(config_section, 'token')
-
     else:
         slack_token = os.environ['token']
     return slack_token
@@ -172,10 +170,6 @@ def main():
             time.sleep(RTM_READ_DELAY)
     else:
         print("Connection failed. Exception traceback printed above.")
-
-
-
-
 
 if __name__ == "__main__":
     main()
