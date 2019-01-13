@@ -153,15 +153,12 @@ def load_config(config_file, config_section):
 
     else:
         slack_token = os.environ['token']
-    return [slack_token]
+    return slack_token
 
 def main():
     config_file = 'config.ini'
     config_section = 'dev'
-
     slack_token = load_config(config_file, config_section)
-
-
     slack_client = SlackClient(slack_token)
     if slack_client.rtm_connect(with_team_state=False, auto_reconnect=True):
         print("Feedbot connected and running!")
@@ -182,6 +179,5 @@ def main():
 
 if __name__ == "__main__":
     main()
-main()
 
 #print('Commands:\nlist feeds\nlist keywords\nadd feed <RSS feed URL>\nadd keyword <keyword>\nremove feed <feed name from \033[1mlist feeds\033[0m command>\nremove keyword <keyword>')
