@@ -5,7 +5,6 @@ import requests
 import os
 import inspect
 import configparser
-import boto3
 import json
 import re
 from datetime import datetime
@@ -35,7 +34,14 @@ def post_lastUpdate(url, lastupdate):
     try:
         date_formatted = datetime.strftime(lastupdate, '%a, %d %b %Y %H:%M:%S %z')
     except TypeError:
-        date_formatted = lastupdate[:-3] + '+0000'
+        if lastupdate[-1:] != 'T':
+            date_formatted = lastupdate
+        else:
+            date_formatted = lastupdate[:-3] + '+0000'
+#    try:
+#        date_formatted = datetime.strftime(lastupdate, '%a, %d %b %Y %H:%M:%S %z')
+#    except TypeError:
+#        date_formatted = lastupdate[:-3] + '+0000'
     feed_search = Query()
     feed_db.update({'lastupdate': date_formatted}, feed_search.url == url)
 
@@ -43,8 +49,8 @@ def post_to_slack(slack_client, newposts):
     i = 0
     newposts.reverse()
     listsize = len(newposts)
-    while i < listsize:        
-        slack_client.api_call("chat.postMessage", slack_channel, text=newposts[i], as_user = True)
+    while i < listsize:
+        slack_client.api_call("chat.postMessage", channel=slack_channel, text=newposts[i], as_user = True)
         i = i + 1
 
 def getfeed(urlstring, last_update_obj):
@@ -79,23 +85,14 @@ def getfeed(urlstring, last_update_obj):
 
 def load_config(config_file, config_section):
 #    dir_path = os.path.dirname(os.path.relpath('config.ini'))
+    dir_path = os.path.dirname(os.path.realpath(__file__))
 #    dir_path = os.path.abspath('.')
-#    if os.path.isfile(dir_path + '\\' + config_file):
-#    filename = inspect.getframeinfo(inspect.currentframe()).filename
-#    dir_path = os.path.dirname(os.path.abspath(filename))
-#    print(dir_path)
-#    config = configparser.ConfigParser()
-#    try:
-#        config.read(config_file)
-#    except IOError:
-#        print("Cant' find fle")
-#    try:
-#        slack_token = config.get(config_section, 'TOKEN')
-#    except KeyError:
-#        print('Steve key error')
-    with open('tokenfile.json', 'r') as keyword_file:
-        slack_token = json.load(keyword_file)
-    keyword_file.close()
+    if os.path.isfile(dir_path + '/' + config_file):
+        config = configparser.ConfigParser()
+        config.read(config_file)
+        slack_token = config.get(config_section, 'token')
+    else:
+        slack_token = os.environ['token']
     return slack_token
 
 def main():
