@@ -1,3 +1,5 @@
+import sys
+sys.path.append('/Users/steve/Documents/python-virtual-environments/slackrssfeed/Lib/site-packages')
 import feedparser
 import requests
 import os
@@ -6,17 +8,44 @@ import boto3
 import json
 import re
 from datetime import datetime
+from datetime import timezone
 from pathlib import Path
 from slackclient import SlackClient
+from tinydb import TinyDB, Query
 
-url = 'http://feeds.arstechnica.com/arstechnica/index'
-keywords = {'rocket', 'SpaceX', 'Apple', 'network', 'Trump', 'Physicist', 'physics', 'Marvel', 'iOS', 'Android', 'VMware', 'Docker', 'AI', 'Artificial Intelligence', 'Microsoft', 'Mac', 'galaxy'}
+#url = 'http://feeds.arstechnica.com/arstechnica/index'
 
-#def unshorten_url(long_url):
-#    session = requests.Session()  # so connections are recycled
-#    resp = session.head(long_url, allow_redirects=True)
-#    return resp.url
+feed_db = TinyDB('rsslist.json')
+slack_channel = "CEKB88A1Y"
 
+def get_keywords():
+    with open('keywords.json') as keyword_file:
+        data1 = json.load(keyword_file)
+    s = set(data1)
+    return s
+
+def get_lastupdate():
+    with open('lastupdate.json') as lastupdate_file:
+        data1 = json.load(lastupdate_file)['date']
+    return data1
+
+def post_lastUpdate(url, lastupdate):
+    try:
+        date_formatted = datetime.strftime(lastupdate, '%a, %d %b %Y %H:%M:%S %z')
+    except TypeError:
+        date_formatted = lastupdate[:-3] + '+0000'
+    feed_search = Query()
+    feed_db.update({'lastupdate': date_formatted}, feed_search.url == url)
+
+
+#    with open('lastupdate.json', 'w') as outfile_file:
+#        date_formatted = {'date': datetime.strftime(lastupdate, '%a, %d %b %Y %H:%m:%S %z')}
+#        outfile_file.write(json.dumps(date_formatted))
+
+#    with open('lastupdate.json', 'w') as outfile_file:
+#        date_formatted = {'date': datetime.strftime(lastupdate, '%a, %d %b %Y %H:%m:%S %z')}
+#        json.dump(outfile_file, date_formatted)
+        
 def get_s3_client(access_key_id, secret_access_key):
     return boto3.client('s3', aws_access_key_id=access_key_id, aws_secret_access_key=secret_access_key)
 
@@ -34,7 +63,7 @@ def post_to_slack(slack_client, newposts):
     newposts.reverse()
     listsize = len(newposts)
     while i < listsize:        
-        slack_client.api_call("chat.postMessage", channel="CEKB88A1Y", text=newposts[i], as_user = True)
+        slack_client.api_call("chat.postMessage", slack_channel, text=newposts[i], as_user = True)
         i = i + 1
 
 #def get_last_update(client, bucket_name, bucket_file, region):
@@ -44,12 +73,18 @@ def post_to_slack(slack_client, newposts):
 
 def getfeed(client, urlstring, last_update_obj):
     newposts_list = []
-    d = feedparser.parse(url)
+    newposts_list_date = []
+    d = feedparser.parse(urlstring)
     numentries = len(d.entries)
     last_update = datetime.strptime(last_update_obj, '%a, %d %b %Y %H:%M:%S %z')
+    keywords = get_keywords()
     count = 0
     while count < numentries :
-        published_date = datetime.strptime(d.entries[count].published, '%a, %d %b %Y %H:%M:%S %z')
+        try:
+            published_date = datetime.strptime(d.entries[count].published, '%a, %d %b %Y %H:%M:%S %z')
+        except ValueError:
+            published_date = datetime.strptime(d.entries[count].published, '%a, %d %b %Y %H:%M:%S %Z')
+            published_date = published_date.replace(tzinfo = timezone.utc)
         if published_date > last_update :    
             linktext = d.entries[count].title
 #            linksplit = set(linktext.split())
@@ -59,11 +94,15 @@ def getfeed(client, urlstring, last_update_obj):
             keywords_lower = set(map(lambda x: x.lower(), keywords))
             if (linksplit_lower & keywords_lower) :
                 newposts_list.append(d.entries[count].link)             # create post list
+                newposts_list_date.append(published_date)
         else:
             break
         count = count + 1
-    write_to_s3(client, d.entries[0].published, d.feed.title)           #    write_to_s3(client, 'Wed, 06 Dec 2018 16:00:17 +0000', 'Ars Technica')
-    return newposts_list
+#    write_to_s3(client, d.entries[0].published, d.feed.title)           #    write_to_s3(client, 'Wed, 06 Dec 2018 16:00:17 +0000', 'Ars Technica')
+    try:
+        return newposts_list, newposts_list_date[0]
+    except IndexError:
+        return newposts_list, d.entries[0].published
 
 def load_config(config_file, config_section):
 #    dir_path = os.path.dirname(os.path.relpath('config.ini'))
@@ -99,10 +138,20 @@ def main():
 
     client = get_s3_client(access_key_id, secret_access_key)
     slack_client = SlackClient(slack_token)
-    last_update_obj = get_s3_obj(client, bucket_name, bucket_file, region)['date']
-    post_list = getfeed(client, url, last_update_obj)
-    print(post_list)
-    post_to_slack(slack_client, post_list)
+#    last_update_obj = get_s3_obj(client, bucket_name, bucket_file, region)['date']
+#    last_update_obj = get_lastupdate()
+    feed_count = len(feed_db)
+    feed_counter = feed_count
+#    while feed_counter = feed_count:
+    while feed_counter > 0:
+        url = feed_db.get(doc_id = feed_counter)['url']
+        last_update_obj = feed_db.get(doc_id = feed_counter)['lastupdate']
+#        url = feed_db.get(doc_id = 1)['url']
+        post_list, published_date = getfeed(client, url, last_update_obj)
+        feed_counter = feed_counter - 1
+        print(post_list)
+        post_lastUpdate(url, published_date)
+#        post_to_slack(slack_client, post_list)
 
 def lambda_handler(event, context):
     main()

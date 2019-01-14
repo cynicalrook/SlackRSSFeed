@@ -141,27 +141,22 @@ def handle_command(slack_client, command, channel):
         text=response or default_response
     )
 
-
-
 def load_config(config_file, config_section):
 #    dir_path = os.path.dirname(os.path.relpath('config.ini'))
-    dir_path = os.path.abspath('.')
-    if os.path.isfile(dir_path + '\\' + config_file):
+    dir_path = os.path.dirname(os.path.realpath(__file__))
+#    dir_path = os.path.abspath('.')
+    if os.path.isfile(dir_path + '/' + config_file):
         config = configparser.ConfigParser()
         config.read(config_file)
         slack_token = config.get(config_section, 'token')
-
     else:
         slack_token = os.environ['token']
-    return [slack_token]
+    return slack_token
 
 def main():
     config_file = 'config.ini'
     config_section = 'dev'
-
     slack_token = load_config(config_file, config_section)
-
-
     slack_client = SlackClient(slack_token)
     if slack_client.rtm_connect(with_team_state=False, auto_reconnect=True):
         print("Feedbot connected and running!")
@@ -176,12 +171,5 @@ def main():
     else:
         print("Connection failed. Exception traceback printed above.")
 
-
-
-
-
 if __name__ == "__main__":
     main()
-main()
-
-#print('Commands:\nlist feeds\nlist keywords\nadd feed <RSS feed URL>\nadd keyword <keyword>\nremove feed <feed name from \033[1mlist feeds\033[0m command>\nremove keyword <keyword>')
