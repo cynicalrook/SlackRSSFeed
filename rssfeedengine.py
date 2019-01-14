@@ -17,7 +17,7 @@ from tinydb import TinyDB, Query
 #url = 'http://feeds.arstechnica.com/arstechnica/index'
 
 feed_db = TinyDB('rsslist.json')
-slack_channel = "CEKB88A1Y"
+slack_channel = "CFC9GQ2V6"
 
 def get_keywords():
     with open('keywords.json') as keyword_file:
