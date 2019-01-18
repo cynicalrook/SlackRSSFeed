@@ -77,7 +77,6 @@ def handle_command(slack_client, command, channel):
         if split_command in ('list keywords'):
             keywords = list(get_keywords())
             response = keywords
-           # response = 'One received'
         elif split_command in ('add keyword'):
             keywords = list(get_keywords())
             if s[2].lower() in keywords:
