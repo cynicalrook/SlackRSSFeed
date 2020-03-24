@@ -45,7 +45,7 @@ def download_dilbert(s, u):
         file.write(response.content)
 
 def post_to_slack(slack_client, comic):
-    slack_client.api_call("chat.postMessage", channel=slack_channel, text='Test', as_user = True)
+    slack_client.api_call("chat.postMessage", channel=slack_channel, text=comic, as_user = True)
 
 def download_engine(fcsd): #fcsd = first comic strip date
 
